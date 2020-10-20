@@ -83,7 +83,7 @@ impl DummyTypeGenerator {
 fn init(app:&Application) {
 
     ensogl_theme::dark::setup(&app);
-    // ensogl_theme::light::setup(&app);
+    ensogl_theme::light::setup(&app);
 
     let _bg = app.display.scene().style_sheet.var(ensogl_theme::vars::application::background::color);
 
@@ -125,7 +125,8 @@ fn init(app:&Application) {
         }
     });
 
-    let expression_2 = expression_mock3();
+    let expression_2 = expression_mock4();
+    println!("{:#?}",expression_2.input_span_tree);
     graph_editor.frp.set_node_expression.emit((node2_id,expression_2.clone()));
     expression_2.input_span_tree.root_ref().leaf_iter().for_each(|node|{
         if let  Some(expr_id) = node.expression_id {
@@ -257,6 +258,22 @@ pub fn expression_mock3() -> Expression {
         typename : Some("Number".to_owned()),
     };
     let parameters       = vec![this_param, param0, param1, param2];
+    let ast              = parser.parse_line(&code).unwrap();
+    let invocation_info  = span_tree::generate::context::CalledMethodInfo {parameters};
+    let ctx              = span_tree::generate::MockContext::new_single(ast.id.unwrap(),invocation_info);
+    let output_span_tree = span_tree::SpanTree::default();
+    let input_span_tree  = span_tree::SpanTree::new(&ast,&ctx).unwrap();
+    Expression {code,input_span_tree,output_span_tree}
+}
+
+pub fn expression_mock4() -> Expression {
+    let code       = "[aa, bbb]".to_string();
+    let parser     = Parser::new_or_panic();
+    let this_param = span_tree::ParameterInfo {
+        name     : Some("this".to_owned()),
+        typename : Some("Image".to_owned()),
+    };
+    let parameters       = vec![this_param];
     let ast              = parser.parse_line(&code).unwrap();
     let invocation_info  = span_tree::generate::context::CalledMethodInfo {parameters};
     let ctx              = span_tree::generate::MockContext::new_single(ast.id.unwrap(),invocation_info);

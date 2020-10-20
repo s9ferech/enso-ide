@@ -292,6 +292,8 @@ impl Manager {
                     let skip            = contains_root || is_empty || is_opr;
                     let is_expected_arg = node.kind.is_expected_argument();
 
+                    println!(">> {} {} {} {}", span.size.value,contains_root,is_empty,is_opr);
+
                     // FIXME: How to properly discover self? Like `image.blur 15`, to disable
                     // 'blur' port?
 
