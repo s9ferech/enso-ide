@@ -654,6 +654,10 @@ impl EdgeTarget {
         let port    = Rc::new(port);
         Self {node_id,port}
     }
+
+    pub fn is_connected_to(&self, node_id:NodeId) -> bool {
+        self.node_id == node_id
+    }
 }
 
 
@@ -798,6 +802,22 @@ impl Edges {
         let detached_source_iter = detached_source.iter().copied();
         detached.extend(detached_source_iter);
         detached.into_iter()
+    }
+
+    pub fn node_attached_edges(&self, node_id:NodeId) -> Vec<EdgeId> {
+        self.all.raw.borrow().iter().filter_map(|(&id,edge)|{
+            let is_source = edge.source.borrow().as_ref().map_or(false, |target| {
+                target.is_connected_to(node_id)
+            });
+            let is_target = edge.target.borrow().as_ref().map_or(false, |target| {
+                target.is_connected_to(node_id)
+            });
+            if is_source || is_target {
+                Some(id)
+            } else {
+                None
+            }
+        }).collect_vec()
     }
 }
 
@@ -2197,9 +2217,12 @@ fn new_graph_editor(app:&Application) -> GraphEditor {
     // === Set Expression Type ===
     frp::extend! { network
 
-    eval inputs.set_expression_type (((node_id,ast_id,maybe_type)) {
-        model.set_node_expression_type(*node_id,*ast_id,maybe_type.clone())
-    });
+    edges_to_refresh <= inputs.set_expression_type.map(f!([model,edges]((node_id,ast_id,maybe_type)) {
+        model.set_node_expression_type(*node_id,*ast_id,maybe_type.clone());
+        edges.node_attached_edges(*node_id)
+    }));
+
+    eval edges_to_refresh ((edge) model.refresh_edge_position(*edge));
 
     }
 
