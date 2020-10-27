@@ -188,6 +188,7 @@ pub mod prelude {
 #[cfg(test)]
 mod network_mode_tests {
     use crate as frp;
+    use frp::prelude::*;
 
     #[test]
     fn lifetime_management() {
@@ -209,58 +210,6 @@ mod network_mode_tests {
         drop(network2);
         source.emit(());
         assert_eq!(sampler.value(),0);
-    }
-}
-
-#[cfg(test)]
-mod dynamic_mode_tests {
-    use crate as frp;
-    use frp::prelude::*;
-
-    #[test]
-    fn weak_memory_management() {
-        frp::new_dynamic_network! {
-            def source = source::<()>();
-        }
-        let weak_source = source.downgrade();
-        assert!(weak_source.upgrade().is_some());
-        drop(source);
-        assert!(weak_source.upgrade().is_none());
-    }
-
-    #[test]
-    fn lifetime_management_1() {
-        frp::new_dynamic_network! {
-            def source = source::<()>();
-            def count  = source.count();
-        }
-        let weak_source = source.downgrade();
-        assert!(weak_source.upgrade().is_some());
-        drop(source);
-        assert!(weak_source.upgrade().is_some());
-        drop(count);
-        assert!(weak_source.upgrade().is_none());
-    }
-
-    #[test]
-    fn lifetime_management_2() {
-        frp::new_dynamic_network! {
-            def source  = source::<()>();
-            def count   = source.count();
-            def sampler = count.sampler();
-        }
-        // Dropping `count`. It's lifetime should be managed by `sampler` now.
-        drop(count);
-        assert_eq!(sampler.value(),0);
-        source.emit(());
-        assert_eq!(sampler.value(),1);
-        source.emit(());
-        assert_eq!(sampler.value(),2);
-        let weak_source = source.downgrade();
-        drop(source);
-        assert!(weak_source.upgrade().is_some());
-        drop(sampler);
-        assert!(weak_source.upgrade().is_none());
     }
 
     #[test]
@@ -343,5 +292,57 @@ mod dynamic_mode_tests {
         }
         let true_count = input.iter().filter(|&&val| val == true).count();
         assert_eq!(passed_events.get(),true_count);
+    }
+}
+
+#[cfg(test)]
+mod dynamic_mode_tests {
+    use crate as frp;
+    use frp::prelude::*;
+
+    #[test]
+    fn weak_memory_management() {
+        frp::new_dynamic_network! {
+            def source = source::<()>();
+        }
+        let weak_source = source.downgrade();
+        assert!(weak_source.upgrade().is_some());
+        drop(source);
+        assert!(weak_source.upgrade().is_none());
+    }
+
+    #[test]
+    fn lifetime_management_1() {
+        frp::new_dynamic_network! {
+            def source = source::<()>();
+            def count  = source.count();
+        }
+        let weak_source = source.downgrade();
+        assert!(weak_source.upgrade().is_some());
+        drop(source);
+        assert!(weak_source.upgrade().is_some());
+        drop(count);
+        assert!(weak_source.upgrade().is_none());
+    }
+
+    #[test]
+    fn lifetime_management_2() {
+        frp::new_dynamic_network! {
+            def source  = source::<()>();
+            def count   = source.count();
+            def sampler = count.sampler();
+        }
+        // Dropping `count`. It's lifetime should be managed by `sampler` now.
+        drop(count);
+        assert_eq!(sampler.value(),0);
+        source.emit(());
+        assert_eq!(sampler.value(),1);
+        source.emit(());
+        assert_eq!(sampler.value(),2);
+        let weak_source = source.downgrade();
+        drop(source);
+        assert!(weak_source.upgrade().is_some());
+        drop(sampler);
+        assert!(weak_source.upgrade().is_none());
     }
 }
