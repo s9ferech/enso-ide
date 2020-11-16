@@ -31,6 +31,8 @@ members = [
     "lib/shortcuts/example",
     "lib/system/web",
     "lib/types",
+
+	"logging_service",
 ]
 
 # These patch versions exist to allow local development of these libraries alongside the IDE. It
